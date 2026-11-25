@@ -68,7 +68,7 @@ country-currency-api/
 Clone the repository and enter the project directory:
 
 ```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
+git clone https://github.com/MichaelKing-Syl/country-currency-api
 cd country-currency-api
 ```
 
