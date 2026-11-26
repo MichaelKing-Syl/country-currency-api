@@ -1,23 +1,29 @@
 # Country Currency API
 
-A RESTful Node.js/Express API that fetches country information and exchange rates from external APIs, calculates estimated GDP values, and caches the results in a MySQL database.
+A RESTful Node.js and Express API that fetches country information and currency exchange rates from external APIs, calculates estimated GDP values, and stores the results in a MySQL database.
+
+## Live Deployment
+
+**Base URL:** https://country-currency-api-1.onrender.com
+
+The API is deployed on Render and uses a MySQL database hosted on Railway.
 
 ## Features
 
-- Fetches country data from the REST Countries API.
+- Fetches country information from the REST Countries API.
 - Fetches USD exchange rates from the ExchangeRate API.
-- Extracts the first currency code for each country.
-- Calculates estimated GDP using population, a random multiplier between 1000 and 2000, and the currency exchange rate.
-- Stores country data in MySQL.
-- Updates cached country data only when the refresh endpoint is called.
+- Extracts the first available currency code for each country.
+- Calculates estimated GDP using population, a random multiplier between 1,000 and 2,000, and the currency exchange rate.
+- Stores country information in MySQL.
+- Refreshes cached data only when the refresh endpoint is called.
 - Supports country lookup by name.
 - Supports filtering by region and currency.
 - Supports sorting by estimated GDP.
 - Supports deleting cached countries.
 - Provides cache status information.
-- Generates a summary PNG image after a successful refresh.
+- Generates a PNG summary image after a successful refresh.
 - Uses centralized Express error handling.
-- Includes automated API tests with Jest and Supertest.
+- Includes automated tests using Jest and Supertest.
 
 ## Technologies
 
@@ -65,10 +71,15 @@ country-currency-api/
 
 ## Installation
 
-Clone the repository and enter the project directory:
+Clone the repository:
 
 ```bash
-git clone https://github.com/MichaelKing-Syl/country-currency-api
+git clone https://github.com/MichaelKing-Syl/country-currency-api.git
+```
+
+Enter the project directory:
+
+```bash
 cd country-currency-api
 ```
 
@@ -80,21 +91,27 @@ npm install
 
 ## Environment Variables
 
-Create a `.env` file in the project root:
+Create a `.env` file in the root directory and configure the following variables:
 
 ```env
 PORT=5000
 
-DB_HOST=127.0.0.1
+DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=your_mysql_password
 DB_NAME=country_currency_api
 
 REST_COUNTRIES_API_KEY=your_rest_countries_api_key
+
+NODE_ENV=development
 ```
 
-Never commit the `.env` file to GitHub.
+Replace the placeholder values with your own local database credentials and API key.
+
+**Important:** Never commit your `.env` file or expose private credentials. The `.env` file is excluded through `.gitignore`.
+
+A safe `.env.example` file is provided for reference.
 
 ## Database Setup
 
@@ -104,30 +121,28 @@ Create the MySQL database:
 CREATE DATABASE IF NOT EXISTS country_currency_api;
 ```
 
-The application expects the following tables:
+The application uses the following tables:
 
-- `countries`
-- `app_status`
+- `countries` — stores cached country information, currency exchange rates, estimated GDP, flag URLs, and refresh timestamps.
+- `app_status` — stores the timestamp of the most recent successful refresh.
 
-The `countries` table stores the cached country information, exchange rates, estimated GDP, flag URL, and refresh timestamp.
-
-The `app_status` table stores the most recent successful refresh timestamp.
+Ensure your MySQL database is running and the database credentials are correctly configured before starting the application.
 
 ## Running the Application
 
-Start the application in development mode:
+Start in development mode:
 
 ```bash
 npm run dev
 ```
 
-Or start it normally:
+Or start normally:
 
 ```bash
 npm start
 ```
 
-The API runs on:
+The local API runs at:
 
 ```text
 http://localhost:5000
@@ -135,13 +150,13 @@ http://localhost:5000
 
 ## API Endpoints
 
-### Refresh countries
+The following endpoints are available.
 
-```http
-POST /countries/refresh
-```
+### 1. Refresh Countries
 
-Fetches the latest country data and exchange rates, calculates estimated GDP values, and updates the MySQL cache.
+**POST** `/countries/refresh`
+
+Fetches the latest country information and exchange rates, calculates estimated GDP values, and updates the MySQL cache.
 
 Example:
 
@@ -159,41 +174,37 @@ Successful response:
 }
 ```
 
-### Get all cached countries
+### 2. Get All Countries
 
-```http
-GET /countries
-```
+**GET** `/countries`
 
-Example:
+Returns all cached countries.
 
 ```bash
 curl http://localhost:5000/countries
 ```
 
-### Filter by region
+### 3. Filter Countries by Region
 
-```http
-GET /countries?region=Africa
-```
+**GET** `/countries?region=Africa`
 
-### Filter by currency
+Returns countries belonging to the specified region.
 
-```http
-GET /countries?currency=NGN
-```
+### 4. Filter Countries by Currency
 
-### Sort by estimated GDP
+**GET** `/countries?currency=NGN`
 
-```http
-GET /countries?sort=gdp_desc
-```
+Returns countries using the specified currency code.
 
-### Get a country by name
+### 5. Sort Countries by Estimated GDP
 
-```http
-GET /countries/:name
-```
+**GET** `/countries?sort=gdp_desc`
+
+Returns countries sorted by estimated GDP in descending order.
+
+### 6. Get a Country by Name
+
+**GET** `/countries/:name`
 
 Example:
 
@@ -203,11 +214,9 @@ curl http://localhost:5000/countries/Nigeria
 
 Country names are matched case-insensitively.
 
-### Delete a country
+### 7. Delete a Country
 
-```http
-DELETE /countries/:name
-```
+**DELETE** `/countries/:name`
 
 Example:
 
@@ -215,11 +224,13 @@ Example:
 curl -X DELETE http://localhost:5000/countries/Nigeria
 ```
 
-### Get API status
+Deletes the specified country from the cached database.
 
-```http
-GET /status
-```
+### 8. Get API Status
+
+**GET** `/status`
+
+Returns the total number of cached countries and the last successful refresh timestamp.
 
 Example response:
 
@@ -230,48 +241,51 @@ Example response:
 }
 ```
 
-### Get summary image
+### 9. Get Summary Image
 
-```http
-GET /countries/image
-```
+**GET** `/countries/image`
 
-Returns the generated PNG summary image.
+Returns a generated PNG image containing:
 
-The image contains:
+- Total number of countries.
+- Top five countries by estimated GDP.
+- Last successful refresh timestamp.
 
-- Total number of countries
-- Top 5 countries by estimated GDP
-- Last refresh timestamp
+## Refresh Behaviour and GDP Calculation
 
-## Refresh Behavior
-
-The country cache is refreshed only when:
+Country data is refreshed only when the following endpoint is called:
 
 ```http
 POST /countries/refresh
 ```
 
-is called.
+For each country, the estimated GDP is calculated using:
 
-For countries with multiple currencies, the first currency is used.
+```text
+estimated_gdp = population × random(1000–2000) ÷ exchange_rate
+```
 
-For countries with an empty currencies array:
+Additional handling:
 
-- `currency_code` is `null`
-- `exchange_rate` is `null`
-- `estimated_gdp` is `0`
+- For countries with multiple currencies, the first currency is used.
+- For countries with an empty currencies array, `currency_code` and `exchange_rate` are `null`, while `estimated_gdp` is `0`.
+- If a currency is unavailable in the exchange-rate response, `exchange_rate` and `estimated_gdp` are `null`.
+- Existing countries are matched by name without case sensitivity and updated during refresh.
+- A new random multiplier is used when GDP is recalculated during a refresh.
+- If an external API fails during refresh, existing database records are protected from partial updates.
 
-If a currency is not available in the exchange-rate response:
+## Error Handling
 
-- `exchange_rate` is `null`
-- `estimated_gdp` is `null`
+The API returns appropriate HTTP status codes and error messages.
 
-Existing countries are matched using a case-insensitive country name and updated during refresh.
+| Status Code | Description |
+|---|---|
+| 400 | Invalid request |
+| 404 | Country not found |
+| 500 | Internal server error |
+| 503 | External data source unavailable |
 
-## Error Responses
-
-### Country not found
+Example 404 response:
 
 ```json
 {
@@ -279,13 +293,7 @@ Existing countries are matched using a case-insensitive country name and updated
 }
 ```
 
-HTTP status:
-
-```text
-404
-```
-
-### Internal server error
+Example 500 response:
 
 ```json
 {
@@ -293,13 +301,7 @@ HTTP status:
 }
 ```
 
-HTTP status:
-
-```text
-500
-```
-
-### External API unavailable
+Example 503 response:
 
 ```json
 {
@@ -308,62 +310,60 @@ HTTP status:
 }
 ```
 
-or:
-
-```json
-{
-  "error": "External data source unavailable",
-  "details": "Could not fetch data from Exchange Rate API"
-}
-```
-
-HTTP status:
-
-```text
-503
-```
-
-If either external API fails during refresh, the existing database records are not modified.
+If either external API fails during a refresh, the existing database records remain unchanged.
 
 ## Testing
 
-Run the automated tests with:
+Run the automated test suite:
 
 ```bash
 npm test
 ```
 
-The current test suite covers:
+The test suite covers:
 
-- API status
-- Country listing
-- Country lookup
-- 404 handling
-- Region filtering
-- Currency filtering
-- GDP sorting
-- Country deletion
-- Summary image response
+- API status.
+- Country listing.
+- Country lookup.
+- 404 handling.
+- Region filtering.
+- Currency filtering.
+- GDP sorting.
+- Country deletion.
+- Summary image response.
 
-Current test result:
+Latest local test result:
 
 ```text
 Test Suites: 1 passed, 1 total
 Tests:       9 passed, 9 total
 ```
 
+## Deployment
+
+The application is deployed using:
+
+- **Application hosting:** Render
+- **Database hosting:** Railway MySQL
+
+Live API:
+
+https://country-currency-api-1.onrender.com
+
+Production environment variables are configured through the hosting provider's environment settings. Sensitive credentials are not stored in the GitHub repository.
+
 ## Security
 
-The `.env` file contains sensitive configuration and must not be committed.
-
-The `.gitignore` file excludes:
+The `.gitignore` file excludes sensitive and unnecessary files:
 
 ```text
-.env
 node_modules/
+.env
 cache/*.png
 coverage/
 ```
+
+Never upload database passwords, API keys, or other private credentials to GitHub.
 
 ## Author
 
